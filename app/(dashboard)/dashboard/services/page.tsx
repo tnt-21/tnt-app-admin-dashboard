@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Pencil, Trash2, Settings, Clock, Info } from 'lucide-react';
+import { Plus, Pencil, Trash2, Settings, Clock, Info, MapPin, X } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import type { Service, ServiceCategory, Species, LifeStage, SubscriptionTier, ServiceAvailability } from '@/types';
 import { useForm, Controller } from 'react-hook-form';
@@ -676,125 +676,282 @@ function EligibilityMatrix({ serviceId }: { serviceId: string }) {
 function AvailabilityConfig({ serviceId }: { serviceId: string }) {
     const { availability, updateAvailability, isUpdatingAvailability } = useService(serviceId);
     
-    const days = [
+    // Group availability by pincode
+    // null/empty pincode = Global Default
+    type AvailabilityGroup = {
+        id: string; // pincode or 'global'
+        pincode: string | null; 
+        days: ServiceAvailability[];
+    };
+
+    const [groups, setGroups] = useState<AvailabilityGroup[]>([]);
+    const [newPincode, setNewPincode] = useState('');
+    const [isAddingPincode, setIsAddingPincode] = useState(false);
+
+    const weekDays = [
         'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
     ];
 
-    const [localAvailability, setLocalAvailability] = useState<ServiceAvailability[]>([]);
+    const createEmptyWeek = (svcId: string, pincode: string | null): ServiceAvailability[] => {
+        return Array.from({ length: 7 }, (_, i) => ({
+            availability_id: `temp-${Date.now()}-${i}`,
+            service_id: svcId,
+            day_of_week: i,
+            start_time: '09:00',
+            end_time: '18:00',
+            slot_duration_minutes: 60,
+            max_bookings_per_slot: 5,
+            buffer_time_minutes: 15,
+            is_active: i > 0 && i < 6, // Mon-Fri default
+            pincode: pincode
+        }));
+    };
 
-    // Sync local state when availability data loads or serviceId changes
+    // Initialize groups from props
     React.useEffect(() => {
-        if (availability && availability.length > 0) {
-            setLocalAvailability(availability);
-        } else if (!availability || availability.length === 0) {
-            // Default 9-6 Mon-Sat
-            const defaultAvail = Array.from({ length: 7 }, (_, i) => ({
-                availability_id: '', 
-                service_id: serviceId,
-                day_of_week: i,
-                start_time: '09:00',
-                end_time: '18:00',
-                slot_duration_minutes: 60,
-                max_bookings_per_slot: 5,
-                buffer_time_minutes: 15,
-                is_active: i > 0 && i < 6
-            }));
-            setLocalAvailability(defaultAvail as any);
-        }
+        if (!availability) return;
+
+        const groupedMap = new Map<string, ServiceAvailability[]>();
+        
+        // Always ensure 'global' exists
+        groupedMap.set('global', []);
+
+        availability.forEach(slot => {
+            const key = slot.pincode || 'global';
+            const current = groupedMap.get(key) || [];
+            current.push(slot);
+            groupedMap.set(key, current);
+        });
+
+        const newGroups: AvailabilityGroup[] = [];
+        
+        groupedMap.forEach((slots, key) => {
+            // Fill missing days if incomplete
+            const completeWeek = createEmptyWeek(serviceId, key === 'global' ? null : key);
+            
+            slots.forEach(slot => {
+                completeWeek[slot.day_of_week] = { ...slot };
+            });
+
+            newGroups.push({
+                id: key,
+                pincode: key === 'global' ? null : key,
+                days: completeWeek
+            });
+        });
+
+        // Ensure global is first
+        newGroups.sort((a, b) => (a.id === 'global' ? -1 : 1));
+        
+        setGroups(newGroups);
     }, [availability, serviceId]);
 
-    const handleUpdate = (dayIndex: number, fields: Partial<ServiceAvailability>) => {
-        const newAvail = localAvailability.map((a, i) => 
-            i === dayIndex ? { ...a, ...fields } : a
-        );
-        setLocalAvailability(newAvail);
+    const handleUpdateDay = (groupId: string, dayIndex: number, fields: Partial<ServiceAvailability>) => {
+        setGroups(prev => prev.map(g => {
+            if (g.id !== groupId) return g;
+            
+            const newDays = [...g.days];
+            newDays[dayIndex] = { ...newDays[dayIndex], ...fields };
+            return { ...g, days: newDays };
+        }));
+    };
+
+    const handleAddPincode = () => {
+        if (!newPincode) return;
+        
+        // Check if exists
+        if (groups.some(g => g.pincode === newPincode)) {
+            // Already exists logic could go here
+            setNewPincode('');
+            setIsAddingPincode(false);
+            return;
+        }
+
+        const newGroup: AvailabilityGroup = {
+            id: newPincode,
+            pincode: newPincode,
+            days: createEmptyWeek(serviceId, newPincode)
+        };
+
+        setGroups(prev => [...prev, newGroup]);
+        setNewPincode('');
+        setIsAddingPincode(false);
+    };
+
+    const handleDeleteGroup = (groupId: string) => {
+        setGroups(prev => prev.filter(g => g.id !== groupId));
     };
 
     const handleSave = () => {
-        updateAvailability(localAvailability);
+        // Flatten all groups into single array
+        const allSlots = groups.flatMap(g => g.days);
+        updateAvailability(allSlots);
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <div className="p-4 bg-amber-50 border border-amber-100 rounded-lg flex gap-3 text-amber-800">
                 <Clock className="h-5 w-5 shrink-0" />
-                <p className="text-sm">
-                    Configure operational hours and slot capacity for this service. 
-                    These settings will be used to generate bookable slots for customers.
-                </p>
+                <div className="space-y-1">
+                    <p className="text-sm font-medium">Availability Configuration</p>
+                    <p className="text-sm opacity-90">
+                        Define global availability and override it for specific locations (Pincodes).
+                        System checks specific pincode rules first, then falls back to Global.
+                    </p>
+                </div>
             </div>
 
-            <div className="grid gap-4">
-                {days.map((day, index) => {
-                    const dayAvail = localAvailability[index] || {
-                        day_of_week: index,
-                        is_active: false,
-                        start_time: '09:00',
-                        end_time: '18:00',
-                        max_bookings_per_slot: 5
-                    };
-                    
-                    return (
-                        <div 
-                            key={day} 
-                            className={cn(
-                                "flex items-center justify-between p-4 border rounded-lg transition-colors",
-                                dayAvail.is_active ? "bg-white border-primary/20 shadow-sm" : "bg-gray-50/50 opacity-60"
-                            )}
-                        >
-                            <div className="flex items-center gap-4 w-1/4">
-                                <Checkbox 
-                                    id={`day-${index}`} 
-                                    checked={dayAvail.is_active} 
-                                    onCheckedChange={(checked) => handleUpdate(index, { is_active: !!checked })}
-                                />
-                                <Label htmlFor={`day-${index}`} className="text-base font-semibold">{day}</Label>
+            <div className="space-y-8">
+                {groups.map((group) => (
+                    <div key={group.id} className="border rounded-xl overflow-hidden bg-white shadow-sm">
+                        {/* Group Header */}
+                        <div className="px-6 py-4 bg-gray-50/80 border-b flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                {group.id === 'global' ? (
+                                    <>
+                                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                            <Clock className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900">Global Schedule</h3>
+                                            <p className="text-xs text-muted-foreground">Default availability for all locations</p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                            <MapPin className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900">Pincode: {group.pincode}</h3>
+                                            <p className="text-xs text-muted-foreground">Specific schedule for this area</p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                             
-                            <div className="flex items-center gap-6 flex-1">
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] uppercase font-bold text-muted-foreground letter-spacing-wide">Shift Start</Label>
-                                    <Input 
-                                        type="time" 
-                                        value={dayAvail.start_time.substring(0, 5)} 
-                                        disabled={!dayAvail.is_active}
-                                        onChange={(e) => handleUpdate(index, { start_time: e.target.value })}
-                                        className="h-10 w-32" 
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Shift End</Label>
-                                    <Input 
-                                        type="time" 
-                                        value={dayAvail.end_time.substring(0, 5)} 
-                                        disabled={!dayAvail.is_active}
-                                        onChange={(e) => handleUpdate(index, { end_time: e.target.value })}
-                                        className="h-10 w-32" 
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Max/Slot</Label>
-                                    <Input 
-                                        type="number" 
-                                        value={dayAvail.max_bookings_per_slot} 
-                                        disabled={!dayAvail.is_active}
-                                        onChange={(e) => handleUpdate(index, { max_bookings_per_slot: parseInt(e.target.value) })}
-                                        className="h-10 w-20" 
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Duration (m)</Label>
-                                    <Input 
-                                        type="number" 
-                                        value={dayAvail.slot_duration_minutes || 60} 
-                                        className="h-10 w-20" 
-                                        disabled
-                                    />
-                                </div>
-                            </div>
+                            {group.id !== 'global' && (
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleDeleteGroup(group.id)}
+                                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Remove Rule
+                                </Button>
+                            )}
                         </div>
-                    );
-                })}
+
+                        {/* Day Grid */}
+                        <div className="p-6 grid gap-4">
+                            {group.days.map((dayAvail, index) => (
+                                <div 
+                                    key={dayAvail.day_of_week}
+                                    className={cn(
+                                        "flex items-center gap-4 p-3 rounded-lg border transition-all",
+                                        dayAvail.is_active ? "bg-white border-primary/20 shadow-sm" : "bg-gray-50/50 border-transparent opacity-60"
+                                    )}
+                                >
+                                    <div className="w-32 shrink-0 flex items-center gap-3">
+                                        <Switch
+                                            checked={dayAvail.is_active}
+                                            onCheckedChange={(checked) => handleUpdateDay(group.id, index, { is_active: checked })}
+                                        />
+                                        <span className="font-medium text-sm">{weekDays[index]}</span>
+                                    </div>
+
+                                    {dayAvail.is_active && (
+                                        <div className="flex-1 flex items-center gap-4">
+                                            <div className="grid grid-cols-2 gap-2 w-64">
+                                                <div className="space-y-1">
+                                                    <Label className="text-[10px] uppercase text-muted-foreground font-bold">Start</Label>
+                                                    <Input 
+                                                        type="time" 
+                                                        className="h-8 text-sm"
+                                                        value={dayAvail.start_time.substring(0, 5)}
+                                                        onChange={(e) => handleUpdateDay(group.id, index, { start_time: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label className="text-[10px] uppercase text-muted-foreground font-bold">End</Label>
+                                                    <Input 
+                                                        type="time" 
+                                                        className="h-8 text-sm"
+                                                        value={dayAvail.end_time.substring(0, 5)}
+                                                        onChange={(e) => handleUpdateDay(group.id, index, { end_time: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="w-px h-8 bg-gray-200" />
+
+                                            <div className="flex items-center gap-4">
+                                                <div className="space-y-1 w-24">
+                                                    <Label className="text-[10px] uppercase text-muted-foreground font-bold">Max/Slot</Label>
+                                                    <Input 
+                                                        type="number" 
+                                                        className="h-8 text-sm"
+                                                        value={dayAvail.max_bookings_per_slot}
+                                                        onChange={(e) => handleUpdateDay(group.id, index, { max_bookings_per_slot: parseInt(e.target.value) })}
+                                                    />
+                                                </div>
+                                                <div className="space-y-1 w-24">
+                                                    <Label className="text-[10px] uppercase text-muted-foreground font-bold">Duration (m)</Label>
+                                                    <div className="h-8 flex items-center px-3 rounded-md bg-gray-100 text-sm text-gray-600">
+                                                        {dayAvail.slot_duration_minutes}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Add New Rule Section */}
+            <div className="pt-4 border-t flex items-center justify-between">
+                {!isAddingPincode ? (
+                    <Button 
+                        variant="outline" 
+                        onClick={() => setIsAddingPincode(true)}
+                        className="border-dashed"
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Location-Specific Schedule
+                    </Button>
+                ) : (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border animate-in fade-in slide-in-from-left-4">
+                        <MapPin className="h-4 w-4 text-muted-foreground ml-2" />
+                        <Input 
+                            placeholder="Enter 6-digit Pincode" 
+                            className="w-48 bg-white"
+                            maxLength={6}
+                            value={newPincode}
+                            onChange={(e) => setNewPincode(e.target.value.replace(/\D/g, ''))}
+                        />
+                        <Button 
+                            size="sm" 
+                            onClick={handleAddPincode}
+                            disabled={newPincode.length < 6}
+                        >
+                            Add Rule
+                        </Button>
+                        <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => {
+                                setIsAddingPincode(false);
+                                setNewPincode('');
+                            }}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <div className="hidden">

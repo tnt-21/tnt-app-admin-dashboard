@@ -152,6 +152,7 @@ export interface ServiceAvailability {
     max_bookings_per_slot: number;
     buffer_time_minutes: number;
     is_active: boolean;
+    pincode?: string | null;
 }
 
 export interface ServiceBlackoutDate {

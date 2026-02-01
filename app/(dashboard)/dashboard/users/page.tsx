@@ -82,7 +82,9 @@ export default function CustomersPage() {
             header: () => <div className="text-right">Actions</div>,
             cell: ({ row }) => (
                 <div className="text-right">
-                    <Button variant="ghost" size="sm">View Details</Button>
+                    <Button variant="ghost" size="sm" asChild>
+                        <a href={`/dashboard/users/${row.original.user_id}`}>View Details</a>
+                    </Button>
                 </div>
             ),
         },
