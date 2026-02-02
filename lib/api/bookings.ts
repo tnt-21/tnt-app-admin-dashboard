@@ -25,11 +25,16 @@ export const bookingsAPI = {
         return response.data.data;
     },
 
-    /**
-     * Assign caregiver to booking (Admin)
-     */
     assignCaregiver: async (bookingId: string, caregiverId: string): Promise<any> => {
         const response = await apiClient.patch(`/admin/bookings/${bookingId}/assign`, { caregiver_id: caregiverId });
+        return response.data.data;
+    },
+
+    /**
+     * Get available caregivers for a booking (Admin)
+     */
+    getAvailableCaregivers: async (bookingId: string): Promise<any> => {
+        const response = await apiClient.get(`/admin/bookings/${bookingId}/available-caregivers`);
         return response.data.data;
     }
 };

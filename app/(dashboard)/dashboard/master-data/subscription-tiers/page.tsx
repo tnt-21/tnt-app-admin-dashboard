@@ -39,11 +39,12 @@ const tierSchema = z.object({
 type TierFormData = z.infer<typeof tierSchema>;
 
 export default function SubscriptionTiersPage() {
-  const { tiers, isLoading, createTier, updateTier, deleteTier } = useSubscriptionTiers();
+  const { tiers, isLoading, createTier, isCreating, updateTier, isUpdating, deleteTier } = useSubscriptionTiers();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier | null>(null);
+  const [isUploadingIcon, setIsUploadingIcon] = useState(false);
 
   const {
     register,
@@ -341,6 +342,7 @@ export default function SubscriptionTiersPage() {
                         label="Tier Icon"
                         value={field.value}
                         onChange={field.onChange}
+                        onUploadingChange={setIsUploadingIcon}
                         folder="tier-icons"
                       />
                     )}
@@ -382,8 +384,20 @@ export default function SubscriptionTiersPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {selectedTier ? 'Update Tier' : 'Create Tier'}
+              <Button type="submit" disabled={isUploadingIcon || isCreating || isUpdating}>
+                {(isCreating || isUpdating) ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                    Saving...
+                  </>
+                ) : isUploadingIcon ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                    Uploading Icon...
+                  </>
+                ) : (
+                  selectedTier ? 'Update Tier' : 'Create Tier'
+                )}
               </Button>
             </DialogFooter>
           </form>

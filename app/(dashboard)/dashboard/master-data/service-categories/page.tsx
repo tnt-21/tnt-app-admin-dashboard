@@ -37,11 +37,12 @@ const categorySchema = z.object({
 type CategoryFormData = z.infer<typeof categorySchema>;
 
 export default function ServiceCategoriesPage() {
-  const { categories, isLoading, createCategory, updateCategory, deleteCategory } =
+  const { categories, isLoading, createCategory, isCreating, updateCategory, isUpdating, deleteCategory } =
     useServiceCategories();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
+  const [isUploadingIcon, setIsUploadingIcon] = useState(false);
 
   const {
     register,
@@ -273,6 +274,7 @@ export default function ServiceCategoriesPage() {
                     label="Category Icon"
                     value={field.value}
                     onChange={field.onChange}
+                    onUploadingChange={setIsUploadingIcon}
                     folder="service-categories"
                   />
                 )}
@@ -311,8 +313,20 @@ export default function ServiceCategoriesPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {selectedCategory ? 'Update' : 'Create'}
+              <Button type="submit" disabled={isUploadingIcon || isCreating || isUpdating}>
+                {(isCreating || isUpdating) ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                    Saving...
+                  </>
+                ) : isUploadingIcon ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                    Uploading Icon...
+                  </>
+                ) : (
+                  selectedCategory ? 'Update' : 'Create'
+                )}
               </Button>
             </DialogFooter>
           </form>

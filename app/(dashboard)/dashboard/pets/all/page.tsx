@@ -30,8 +30,16 @@ export default function GlobalPetsPage() {
             header: 'Pet Name',
             cell: ({ row }) => (
                 <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-orange-50 flex items-center justify-center">
-                        <PawPrint className="h-5 w-5 text-orange-500" />
+                    <div className="h-9 w-9 rounded-full bg-orange-50 flex items-center justify-center overflow-hidden">
+                        {row.original.photo_url ? (
+                            <img 
+                                src={row.original.photo_url} 
+                                alt="" 
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <PawPrint className="h-5 w-5 text-orange-500" />
+                        )}
                     </div>
                     <div className="flex flex-col">
                         <span className="font-medium text-gray-900">{row.original.name}</span>

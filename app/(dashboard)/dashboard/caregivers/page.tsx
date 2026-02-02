@@ -47,8 +47,16 @@ export default function CaregiversPage() {
             header: 'Caregiver',
             cell: ({ row }) => (
                 <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center">
-                        <UserCog className="h-5 w-5 text-blue-600" />
+                    <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden">
+                        {row.original.profile_photo_url ? (
+                            <img 
+                                src={row.original.profile_photo_url} 
+                                alt="" 
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <UserCog className="h-5 w-5 text-blue-600" />
+                        )}
                     </div>
                     <div className="flex flex-col">
                         <span className="font-medium text-gray-900">{row.original.full_name}</span>

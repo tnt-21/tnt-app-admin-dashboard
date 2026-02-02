@@ -7,21 +7,26 @@ import { Label } from '@/components/ui/label';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
   value?: string;
   onChange: (url: string) => void;
+  onUploadingChange?: (uploading: boolean) => void;
   folder?: string;
   label?: string;
   accept?: string;
+  disabled?: boolean;
 }
 
 export function FileUpload({
   value,
   onChange,
+  onUploadingChange,
   folder = 'icons',
   label = 'Upload Image',
   accept = 'image/*',
+  disabled = false,
 }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | undefined>(value);
@@ -50,27 +55,29 @@ export function FileUpload({
     reader.readAsDataURL(file);
 
     // Upload to S3
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('folder', folder);
-      formData.append('file', file);
+      setUploading(true);
+      onUploadingChange?.(true);
+      try {
+        const formData = new FormData();
+        formData.append('folder', folder);
+        formData.append('file', file);
 
-      const response = await apiClient.post<{ url: string }>('/upload/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+        const response = await apiClient.post<{ url: string }>('/upload/image', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
 
-      const imageUrl = response.data.data.url;
-      onChange(imageUrl);
-      toast.success('Image uploaded successfully');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to upload image');
-      setPreview(value);
-    } finally {
-      setUploading(false);
-    }
+        const imageUrl = response.data.data.url;
+        onChange(imageUrl);
+        toast.success('Image uploaded successfully');
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to upload image');
+        setPreview(value);
+      } finally {
+        setUploading(false);
+        onUploadingChange?.(false);
+      }
   };
 
   const handleRemove = () => {
@@ -104,8 +111,11 @@ export function FileUpload({
         </div>
       ) : (
         <div
-          className="flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100"
-          onClick={() => fileInputRef.current?.click()}
+          className={cn(
+            "flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100",
+            (uploading || disabled) && "cursor-not-allowed opacity-50"
+          )}
+          onClick={() => !uploading && !disabled && fileInputRef.current?.click()}
         >
           {uploading ? (
             <div className="text-center">

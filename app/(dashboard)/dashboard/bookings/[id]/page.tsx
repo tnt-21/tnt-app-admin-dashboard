@@ -19,6 +19,7 @@ import {
     SelectTrigger, SelectValue 
 } from '@/components/ui/select';
 import { toast } from 'react-hot-toast';
+import { AvailableCaregiversDialog } from '@/components/dialogs/available-caregivers-dialog';
 
 export default function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -228,26 +229,32 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                     </div>
                                     <div className="space-y-2">
                                         <p className="text-xs font-medium text-muted-foreground uppercase">Reassign Caregiver</p>
-                                        <div className="flex gap-2">
-                                            <Select value={selectedCaregiver} onValueChange={setSelectedCaregiver}>
-                                                <SelectTrigger className="h-9">
-                                                    <SelectValue placeholder="Select caregiver" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {caregivers?.map((c: Record<string, any>) => (
-                                                        <SelectItem key={c.caregiver_id} value={c.caregiver_id}>
-                                                            {c.full_name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <Button 
-                                                size="sm" 
-                                                onClick={handleAssignCaregiver}
-                                                disabled={!selectedCaregiver || assignCaregiver.isPending}
-                                            >
-                                                Assign
-                                            </Button>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex gap-2">
+                                                <Select value={selectedCaregiver} onValueChange={setSelectedCaregiver}>
+                                                    <SelectTrigger className="h-9">
+                                                        <SelectValue placeholder="Quick select" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {caregivers?.map((c: Record<string, any>) => (
+                                                            <SelectItem key={c.caregiver_id} value={c.caregiver_id}>
+                                                                {c.full_name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <Button 
+                                                    size="sm" 
+                                                    onClick={handleAssignCaregiver}
+                                                    disabled={!selectedCaregiver || assignCaregiver.isPending}
+                                                >
+                                                    Assign
+                                                </Button>
+                                            </div>
+                                            <AvailableCaregiversDialog 
+                                                bookingId={id} 
+                                                onAssigned={refetch} 
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -258,25 +265,39 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                         <p className="text-xs font-medium">No caregiver assigned yet</p>
                                     </div>
                                     <div className="space-y-2">
-                                        <Select value={selectedCaregiver} onValueChange={setSelectedCaregiver}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select for assignment" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {caregivers?.map((c: Record<string, any>) => (
-                                                    <SelectItem key={c.caregiver_id} value={c.caregiver_id}>
-                                                        {c.full_name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <Button 
-                                            className="w-full"
-                                            onClick={handleAssignCaregiver}
-                                            disabled={!selectedCaregiver || assignCaregiver.isPending}
-                                        >
-                                            Assign Caregiver
-                                        </Button>
+                                        <div className="flex flex-col gap-2">
+                                            <Select value={selectedCaregiver} onValueChange={setSelectedCaregiver}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select for assignment" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {caregivers?.map((c: Record<string, any>) => (
+                                                        <SelectItem key={c.caregiver_id} value={c.caregiver_id}>
+                                                            {c.full_name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button 
+                                                className="w-full"
+                                                onClick={handleAssignCaregiver}
+                                                disabled={!selectedCaregiver || assignCaregiver.isPending}
+                                            >
+                                                Assign Caregiver
+                                            </Button>
+                                            <div className="relative">
+                                                <div className="absolute inset-0 flex items-center">
+                                                    <span className="w-full border-t" />
+                                                </div>
+                                                <div className="relative flex justify-center text-xs uppercase">
+                                                    <span className="bg-background px-2 text-muted-foreground">Or</span>
+                                                </div>
+                                            </div>
+                                            <AvailableCaregiversDialog 
+                                                bookingId={id} 
+                                                onAssigned={refetch} 
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}

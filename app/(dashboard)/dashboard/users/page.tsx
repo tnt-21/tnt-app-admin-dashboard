@@ -27,8 +27,16 @@ export default function CustomersPage() {
             header: 'Customer',
             cell: ({ row }) => (
                 <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                        <UserCircle className="h-5 w-5 text-primary" />
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                        {row.original.profile_photo_url ? (
+                            <img 
+                                src={row.original.profile_photo_url} 
+                                alt="" 
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <UserCircle className="h-5 w-5 text-primary" />
+                        )}
                     </div>
                     <div className="flex flex-col">
                         <span className="font-medium">{row.original.full_name}</span>

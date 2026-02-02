@@ -51,7 +51,7 @@ const serviceSchema = z.object({
 type ServiceFormData = z.infer<typeof serviceSchema>;
 
 export default function ServicesPage() {
-    const { services, isLoading, createService, updateService, deleteService } = useServices();
+    const { services, isLoading, createService, isCreating, updateService, isUpdating, deleteService } = useServices();
     const { categories } = useServiceCategories();
     const { species } = useSpecies();
     const { lifeStages } = useLifeStages();
@@ -61,6 +61,7 @@ export default function ServicesPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [activeTab, setActiveTab] = useState('basic');
+    const [isUploadingIcon, setIsUploadingIcon] = useState(false);
 
     const {
         register,
@@ -418,6 +419,7 @@ export default function ServicesPage() {
                                                     label="Service Icon/Photo"
                                                     value={field.value}
                                                     onChange={field.onChange}
+                                                    onUploadingChange={setIsUploadingIcon}
                                                     folder="services"
                                                 />
                                             )}
@@ -456,8 +458,20 @@ export default function ServicesPage() {
                                     Cancel
                                 </Button>
                                 {activeTab === 'basic' ? (
-                                    <Button type="submit" form="service-form">
-                                        {selectedService ? 'Update Service' : 'Create Service'}
+                                    <Button type="submit" form="service-form" disabled={isUploadingIcon || isCreating || isUpdating}>
+                                        {(isCreating || isUpdating) ? (
+                                          <>
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                                            Saving...
+                                          </>
+                                        ) : isUploadingIcon ? (
+                                          <>
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                                            Uploading Icon...
+                                          </>
+                                        ) : (
+                                          selectedService ? 'Update Service' : 'Create Service'
+                                        )}
                                     </Button>
                                 ) : activeTab === 'eligibility' ? (
                                     <Button 

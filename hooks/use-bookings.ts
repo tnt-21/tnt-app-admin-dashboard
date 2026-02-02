@@ -59,3 +59,18 @@ export function useBookingMutations() {
         assignCaregiver
     };
 }
+
+export function useAvailableCaregivers(bookingId: string) {
+    const availableQuery = useQuery({
+        queryKey: ['available-caregivers', bookingId],
+        queryFn: () => bookingsAPI.getAvailableCaregivers(bookingId),
+        enabled: !!bookingId
+    });
+
+    return {
+        caregivers: availableQuery.data || [],
+        isLoading: availableQuery.isLoading,
+        error: availableQuery.error,
+        refetch: availableQuery.refetch
+    };
+}

@@ -19,8 +19,16 @@ const columns: ColumnDef<any>[] = [
       const manager = row.original;
       return (
         <Link href={`/dashboard/care-managers/${manager.care_manager_id}`} className="flex items-center gap-3 hover:underline">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <UserCircle className="h-5 w-5 text-primary" />
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+            {manager.profile_photo_url ? (
+              <img 
+                src={manager.profile_photo_url} 
+                alt="" 
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <UserCircle className="h-5 w-5 text-primary" />
+            )}
           </div>
           <div className="flex flex-col">
             <span className="font-medium text-sm">{manager.full_name}</span>
