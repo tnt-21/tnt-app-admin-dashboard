@@ -18,6 +18,7 @@ import {
   BarChart3,
   Settings,
   ChevronDown,
+  Truck,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -83,6 +84,15 @@ const navigation: NavItem[] = [
     title: 'Bookings',
     href: '/dashboard/bookings',
     icon: Calendar,
+  },
+  {
+    title: 'Van Routing',
+    icon: Truck,
+    children: [
+      { title: 'Pending Requests', href: '/dashboard/vans/pending-requests', icon: null },
+      { title: 'Route Generator', href: '/dashboard/vans/route-generator', icon: null },
+      { title: 'Van Schedules', href: '/dashboard/vans/schedules', icon: null },
+    ],
   },
   {
     title: 'Payments',
