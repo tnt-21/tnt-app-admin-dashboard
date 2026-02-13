@@ -77,8 +77,14 @@ export default function BookingsPage() {
             header: 'Schedule',
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="text-sm">{format(new Date(row.original.booking_date), 'MMM dd, yyyy')}</span>
-                    <span className="text-xs text-muted-foreground">{row.original.booking_time}</span>
+                    <span className="text-sm">
+                        {row.original.booking_date 
+                            ? format(new Date(row.original.booking_date), 'MMM dd, yyyy')
+                            : 'Unscheduled'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                        {row.original.booking_time || 'Pending time'}
+                    </span>
                 </div>
             )
         },

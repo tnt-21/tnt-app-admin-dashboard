@@ -54,9 +54,19 @@ export function useBookingMutations() {
         }
     });
 
+    const updateSchedule = useMutation({
+        mutationFn: ({ id, bookingDate, bookingTime }: { id: string, bookingDate: string, bookingTime: string }) =>
+            bookingsAPI.updateSchedule(id, bookingDate, bookingTime),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-booking'] });
+        }
+    });
+
     return {
         updateStatus,
-        assignCaregiver
+        assignCaregiver,
+        updateSchedule
     };
 }
 

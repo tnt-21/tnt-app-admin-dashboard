@@ -18,6 +18,7 @@ import {
     Select, SelectContent, SelectItem, 
     SelectTrigger, SelectValue 
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { toast } from 'react-hot-toast';
 import { AvailableCaregiversDialog } from '@/components/dialogs/available-caregivers-dialog';
 
@@ -26,10 +27,12 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     const { booking, isLoading: bookingLoading, refetch } = useBookingDetails(id);
     const { statuses } = useBookingStatuses();
     const { caregivers } = useCaregivers({ limit: 100, status: 'active' });
-    const { updateStatus, assignCaregiver } = useBookingMutations();
+    const { updateStatus, assignCaregiver, updateSchedule } = useBookingMutations();
 
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [selectedCaregiver, setSelectedCaregiver] = useState<string>('');
+    const [scheduleDate, setScheduleDate] = useState<string>(booking?.booking_date || '');
+    const [scheduleTime, setScheduleTime] = useState<string>(booking?.booking_time || '');
 
     if (bookingLoading) return <div className="p-8 text-center text-muted-foreground">Loading booking details...</div>;
     if (!booking) return <div className="p-8 text-center text-red-500">Booking not found.</div>;
@@ -61,6 +64,20 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
         }
     };
 
+    const handleUpdateSchedule = async () => {
+        if (!scheduleDate || !scheduleTime) {
+            toast.error('Please select both date and time');
+            return;
+        }
+        try {
+            await updateSchedule.mutateAsync({ id, bookingDate: scheduleDate, bookingTime: scheduleTime });
+            toast.success('Schedule updated successfully');
+            refetch();
+        } catch (error) {
+            toast.error('Failed to update schedule');
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -84,7 +101,9 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                         </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                        Scheduled for {format(new Date(booking.booking_date), 'PPPP')} at {booking.booking_time}
+                        {booking.booking_date 
+                            ? `Scheduled for ${format(new Date(booking.booking_date), 'PPPP')} at ${booking.booking_time}`
+                            : 'Unscheduled - Awaiting date and time assignment'}
                     </p>
                 </div>
             </div>
@@ -301,6 +320,42 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                                     </div>
                                 </div>
                             )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Schedule Service */}
+                    <Card className="border-none shadow-sm">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                                <Calendar className="h-5 w-5 text-primary" />
+                                Schedule Service
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground uppercase">Date</label>
+                                <Input 
+                                    type="date" 
+                                    value={scheduleDate} 
+                                    onChange={(e) => setScheduleDate(e.target.value)} 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground uppercase">Time</label>
+                                <Input 
+                                    type="time" 
+                                    value={scheduleTime} 
+                                    onChange={(e) => setScheduleTime(e.target.value)} 
+                                />
+                            </div>
+                            <Button 
+                                className="w-full h-10 gap-2" 
+                                onClick={handleUpdateSchedule}
+                                disabled={updateSchedule.isPending}
+                            >
+                                <CheckCircle2 className="h-4 w-4" />
+                                Save Schedule
+                            </Button>
                         </CardContent>
                     </Card>
 

@@ -30,6 +30,11 @@ export const bookingsAPI = {
         return response.data.data;
     },
 
+    updateSchedule: async (id: string, booking_date: string, booking_time: string): Promise<any> => {
+        const response = await apiClient.patch(`/admin/bookings/${id}/schedule`, { booking_date, booking_time });
+        return response.data.data;
+    },
+
     /**
      * Get available caregivers for a booking (Admin)
      */
