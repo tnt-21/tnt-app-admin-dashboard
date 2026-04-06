@@ -54,6 +54,7 @@ export interface SubscriptionTier {
     tier_description?: string;
     marketing_tagline?: string;
     base_price: number;
+    annual_price: number;
     display_order: number;
     icon_url?: string;
     color_hex?: string;

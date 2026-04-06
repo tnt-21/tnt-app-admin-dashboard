@@ -30,6 +30,7 @@ const tierSchema = z.object({
   tier_description: z.string().max(500).optional(),
   marketing_tagline: z.string().max(255).optional(),
   base_price: z.coerce.number().min(0, 'Base price must be 0 or more'),
+  annual_price: z.coerce.number().min(0, 'Annual price must be 0 or more'),
   display_order: z.coerce.number().int().min(0, 'Display order must be 0 or more'),
   icon_url: z.string().url('Invalid URL').optional().or(z.literal('')),
   color_hex: z.string().regex(/^#([A-Fa-f0-8]{6}|[A-Fa-f0-8]{3})$/, 'Invalid hex color').default('#000000'),
@@ -59,6 +60,7 @@ export default function SubscriptionTiersPage() {
     defaultValues: {
       is_active: true,
       base_price: 0,
+      annual_price: 0,
       display_order: 0,
       color_hex: '#3b82f6',
     },
@@ -75,6 +77,7 @@ export default function SubscriptionTiersPage() {
       tier_description: '',
       marketing_tagline: '',
       base_price: 0,
+      annual_price: 0,
       display_order: tiers.length + 1,
       icon_url: '',
       color_hex: '#3b82f6',
@@ -91,6 +94,7 @@ export default function SubscriptionTiersPage() {
       tier_description: tier.tier_description || '',
       marketing_tagline: tier.marketing_tagline || '',
       base_price: Number(tier.base_price),
+      annual_price: Number(tier.annual_price || 0),
       display_order: tier.display_order,
       icon_url: tier.icon_url || '',
       color_hex: tier.color_hex || '#3b82f6',
@@ -190,9 +194,17 @@ export default function SubscriptionTiersPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold">₹{Number(tier.base_price).toLocaleString()}</span>
-                <span className="text-sm text-muted-foreground">/ month</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold">₹{Number(tier.base_price).toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground">/ month</span>
+                </div>
+                {tier.annual_price !== undefined && tier.annual_price > 0 && (
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-semibold text-gray-700">₹{Number(tier.annual_price).toLocaleString()}</span>
+                    <span className="text-sm text-muted-foreground">/ year</span>
+                  </div>
+                )}
               </div>
               
               {tier.marketing_tagline && (
@@ -298,16 +310,29 @@ export default function SubscriptionTiersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="display_order">Display Order</Label>
+                    <Label htmlFor="annual_price">Annual Price *</Label>
                     <Input
-                      id="display_order"
+                      id="annual_price"
                       type="number"
-                      {...register('display_order')}
+                      step="0.01"
+                      {...register('annual_price')}
                     />
-                    {errors.display_order && (
-                      <p className="text-sm text-red-600">{errors.display_order.message}</p>
+                    {errors.annual_price && (
+                      <p className="text-sm text-red-600">{errors.annual_price.message}</p>
                     )}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="display_order">Display Order</Label>
+                  <Input
+                    id="display_order"
+                    type="number"
+                    {...register('display_order')}
+                  />
+                  {errors.display_order && (
+                    <p className="text-sm text-red-600">{errors.display_order.message}</p>
+                  )}
                 </div>
               </div>
 
