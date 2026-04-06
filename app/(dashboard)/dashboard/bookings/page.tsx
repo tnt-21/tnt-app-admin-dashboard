@@ -73,6 +73,24 @@ export default function BookingsPage() {
             )
         },
         {
+            accessorKey: 'created_at',
+            header: 'Booking Made On',
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="text-sm">
+                        {row.original.created_at
+                            ? format(new Date(row.original.created_at), 'MMM dd, yyyy')
+                            : ''}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                        {row.original.created_at
+                            ? format(new Date(row.original.created_at), 'HH:mm')
+                            : ''}
+                    </span>
+                </div>
+            )
+        },
+        {
             accessorKey: 'booking_date',
             header: 'Schedule',
             cell: ({ row }) => (
