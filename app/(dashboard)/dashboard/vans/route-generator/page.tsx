@@ -30,8 +30,10 @@ export default function RouteGeneratorPage() {
   });
   const [daysAhead, setDaysAhead] = useState(7);
   const [loading, setLoading] = useState(false);
+  const [finalizing, setFinalizing] = useState<Record<string, boolean>>({});
   const [result, setResult] = useState<RouteResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const generateRoutes = async () => {
     try {
@@ -75,6 +77,36 @@ export default function RouteGeneratorPage() {
       setError(err.message || 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleFinalize = async (scheduleId: string) => {
+    try {
+      setFinalizing(prev => ({ ...prev, [scheduleId]: true }));
+      setError(null);
+      setSuccess(null);
+
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vans/schedules/${scheduleId}/finalize`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(data.message || 'Route finalized and notifications sent!');
+        // Update local state to show it's finalized (optional, could add a 'finalized' flag to result)
+      } else {
+        setError(data.message || 'Failed to finalize route');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during finalization');
+    } finally {
+      setFinalizing(prev => ({ ...prev, [scheduleId]: false }));
     }
   };
 
@@ -155,6 +187,18 @@ export default function RouteGeneratorPage() {
         </Card>
       )}
 
+      {/* Success Display */}
+      {success && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-2 text-green-800">
+              <CheckCircle2 className="h-5 w-5" />
+              <span>{success}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Results Display */}
       {result && (
         <div className="space-y-6">
@@ -229,7 +273,7 @@ export default function RouteGeneratorPage() {
                             className="bg-gray-50 rounded-lg p-3 space-y-1"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">Route {idx + 1}</span>
+                              <span className="font-medium text-sm">{route.schedule.van_name} (#{route.schedule.van_number})</span>
                               <Badge variant="outline">{route.assignments.length} stops</Badge>
                             </div>
                             <div className="text-xs text-gray-600">
@@ -238,6 +282,23 @@ export default function RouteGeneratorPage() {
                             <div className="text-xs text-gray-600">
                               Efficiency: {route.efficiencyScore.toFixed(2)} km/stop
                             </div>
+                            
+                            <Button 
+                              size="sm" 
+                              variant="secondary" 
+                              className="w-full mt-2 text-xs font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200"
+                              onClick={() => handleFinalize(route.schedule.schedule_id)}
+                              disabled={finalizing[route.schedule.schedule_id]}
+                            >
+                              {finalizing[route.schedule.schedule_id] ? (
+                                <>
+                                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                  Finalizing...
+                                </>
+                              ) : (
+                                'Finalize & Notify'
+                              )}
+                            </Button>
                           </div>
                         ))}
                       </div>

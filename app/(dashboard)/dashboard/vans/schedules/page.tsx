@@ -187,7 +187,7 @@ export default function VanSchedulesPage() {
           <CardHeader>
             <CardTitle>
               {selectedVan
-                ? `${selectedVan.van_name} - ${new Date(selectedDate).toLocaleDateString('en-US', {
+                ? `${selectedVan.van_name} (#${selectedVan.van_number}) - ${new Date(selectedDate).toLocaleDateString('en-US', {
                     weekday: 'long',
                     month: 'long',
                     day: 'numeric',
