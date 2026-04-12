@@ -165,6 +165,22 @@ export interface ServiceBlackoutDate {
 }
 
 // ============================================
+// Product Types
+// ============================================
+
+export interface Product {
+    product_id: string;
+    name: string;
+    description?: string;
+    price: number;
+    company_name?: string;
+    photo_url?: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+// ============================================
 // Caregiver Types
 // ============================================
 

@@ -19,6 +19,7 @@ import {
   Settings,
   ChevronDown,
   Truck,
+  Package,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -52,6 +53,11 @@ const navigation: NavItem[] = [
     title: 'Service Catalog',
     href: '/dashboard/services',
     icon: ShoppingBag,
+  },
+  {
+    title: 'Products',
+    href: '/dashboard/products',
+    icon: Package,
   },
   {
     title: 'Subscriptions',
