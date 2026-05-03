@@ -117,6 +117,7 @@ export function SettingDialog({ setting, children }: SettingDialogProps) {
                                     <SelectItem value="payment">Payment</SelectItem>
                                     <SelectItem value="notification">Notification</SelectItem>
                                     <SelectItem value="security">Security</SelectItem>
+                                    <SelectItem value="boarding">Boarding</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

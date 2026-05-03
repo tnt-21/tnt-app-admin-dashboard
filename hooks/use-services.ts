@@ -112,3 +112,37 @@ export function useService(id: string) {
         isUpdatingAvailability: updateAvailabilityMutation.isPending,
     };
 }
+
+export function useAddons() {
+    const queryClient = useQueryClient();
+
+    const addonsQuery = useQuery({
+        queryKey: ['addons'],
+        queryFn: () => servicesAPI.getAddons(),
+    });
+
+    const upsertAddonMutation = useMutation({
+        mutationFn: (data: any) => servicesAPI.upsertAddon(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['addons'] });
+            toast.success('Add-on updated successfully');
+        }
+    });
+
+    const deleteAddonMutation = useMutation({
+        mutationFn: (id: string) => servicesAPI.deleteAddon(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['addons'] });
+            toast.success('Add-on deleted successfully');
+        }
+    });
+
+    return {
+        addons: addonsQuery.data || [],
+        isLoading: addonsQuery.isLoading,
+        upsertAddon: upsertAddonMutation.mutateAsync,
+        isUpserting: upsertAddonMutation.isPending,
+        deleteAddon: deleteAddonMutation.mutateAsync,
+        isDeleting: deleteAddonMutation.isPending
+    };
+}

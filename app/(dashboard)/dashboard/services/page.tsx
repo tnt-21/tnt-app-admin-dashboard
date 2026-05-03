@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useServices, useService } from '@/hooks/use-services';
+import { useServices, useService, useAddons } from '@/hooks/use-services';
 import { useServiceCategories } from '@/hooks/use-service-categories';
 import { useSpecies } from '@/hooks/use-species';
 import { useLifeStages } from '@/hooks/use-life-stages';
@@ -9,6 +9,7 @@ import { useSubscriptionTiers } from '@/hooks/use-subscription-tiers';
 import { DataTable } from '@/components/tables/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -249,13 +250,26 @@ export default function ServicesPage() {
                 </Button>
             </div>
 
-            {/* Table */}
-            <DataTable
-                columns={columns}
-                data={services}
-                searchKey="service_name"
-                searchPlaceholder="Search services..."
-            />
+            <Tabs defaultValue="catalog" className="w-full">
+                <TabsList className="bg-white border mb-4">
+                    <TabsTrigger value="catalog">Service Catalog</TabsTrigger>
+                    <TabsTrigger value="addons">Add-on Services</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="catalog">
+                    {/* Table */}
+                    <DataTable
+                        columns={columns}
+                        data={services}
+                        searchKey="service_name"
+                        searchPlaceholder="Search services..."
+                    />
+                </TabsContent>
+
+                <TabsContent value="addons">
+                    <AddonServicesManager />
+                </TabsContent>
+            </Tabs>
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -798,7 +812,7 @@ function AvailabilityConfig({ serviceId }: { serviceId: string }) {
 
     const handleSave = () => {
         // Flatten all groups into single array
-        const allSlots = groups.flatMap(g => g.days);
+        const allSlots = groups.flatMap(g => g.days.filter(d => d.is_active));
         updateAvailability(allSlots);
     };
 
@@ -975,6 +989,146 @@ function AvailabilityConfig({ serviceId }: { serviceId: string }) {
                 />
             </div>
         </div>
+    );
+}
+
+/**
+ * Addon Services Manager Component
+ */
+function AddonServicesManager() {
+    const { addons, isLoading, upsertAddon, isUpserting, deleteAddon } = useAddons();
+    const [isAddonDialogOpen, setIsAddonDialogOpen] = useState(false);
+    const [selectedAddon, setSelectedAddon] = useState<any>(null);
+
+    const handleAdd = () => {
+        setSelectedAddon(null);
+        setIsAddonDialogOpen(true);
+    };
+
+    const handleEdit = (addon: any) => {
+        setSelectedAddon(addon);
+        setIsAddonDialogOpen(true);
+    };
+
+    const addonColumns: ColumnDef<any>[] = [
+        {
+            accessorKey: 'name',
+            header: 'Add-on Name',
+        },
+        {
+            accessorKey: 'category',
+            header: 'Category',
+            cell: ({ row }) => <Badge variant="outline">{row.original.category}</Badge>
+        },
+        {
+            accessorKey: 'price',
+            header: 'Price (₹)',
+            cell: ({ row }) => <span className="font-mono">₹{row.original.price}</span>
+        },
+        {
+            accessorKey: 'is_active',
+            header: 'Status',
+            cell: ({ row }) => (
+                <Badge variant={row.original.is_active ? 'default' : 'secondary'}>
+                    {row.original.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+            )
+        },
+        {
+            id: 'actions',
+            header: 'Actions',
+            cell: ({ row }) => (
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row.original)}>
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => deleteAddon(row.original.addon_id)}>
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                </div>
+            )
+        }
+    ];
+
+    return (
+        <Card className="border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>On-Demand Add-on Services</CardTitle>
+                    <CardDescription>Manage chargeable add-ons like treatments and grooming extras.</CardDescription>
+                </div>
+                <Button size="sm" onClick={handleAdd}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Add-on
+                </Button>
+            </CardHeader>
+            <CardContent>
+                <DataTable columns={addonColumns} data={addons} isLoading={isLoading} />
+            </CardContent>
+
+            <Dialog open={isAddonDialogOpen} onOpenChange={setIsAddonDialogOpen}>
+                <AddonFormDialog 
+                    addon={selectedAddon} 
+                    onClose={() => setIsAddonDialogOpen(false)} 
+                    onSave={upsertAddon}
+                    isSaving={isUpserting}
+                />
+            </Dialog>
+        </Card>
+    );
+}
+
+function AddonFormDialog({ addon, onClose, onSave, isSaving }: any) {
+    const { register, handleSubmit, formState: { errors } } = useForm({
+        defaultValues: addon || {
+            name: '',
+            category: 'HEALTH & SKIN TREATMENTS',
+            price: 1000,
+            is_active: true
+        }
+    });
+
+    const onSubmit = (data: any) => {
+        onSave(data).then(() => onClose());
+    };
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{addon ? 'Edit Add-on' : 'Create Add-on'}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label>Name</Label>
+                    <Input {...register('name', { required: true })} />
+                </div>
+                <div className="space-y-2">
+                    <Label>Category</Label>
+                    <Select defaultValue={addon?.category || 'HEALTH & SKIN TREATMENTS'} onValueChange={(v) => register('category').onChange({ target: { value: v } })}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="HEALTH & SKIN TREATMENTS">HEALTH & SKIN TREATMENTS</SelectItem>
+                            <SelectItem value="COAT & FUR MANAGEMENT">COAT & FUR MANAGEMENT</SelectItem>
+                            <SelectItem value="PREMIUM / COMFORT SERVICES">PREMIUM / COMFORT SERVICES</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label>Price (₹)</Label>
+                    <Input type="number" {...register('price', { required: true, valueAsNumber: true })} />
+                </div>
+                <div className="flex items-center space-x-2 pt-2">
+                    <Switch defaultChecked={addon?.is_active ?? true} onCheckedChange={(v) => register('is_active').onChange({ target: { value: v } })} />
+                    <Label>Active</Label>
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Add-on'}</Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
     );
 }
 

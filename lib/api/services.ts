@@ -71,5 +71,28 @@ export const servicesAPI = {
     updateAvailability: async (serviceId: string, availability: ServiceAvailability[]): Promise<ServiceAvailability[]> => {
         const response = await apiClient.post(`/admin/services/${serviceId}/availability`, { availability });
         return response.data.data;
+    },
+
+    /**
+     * Get all add-on services
+     */
+    getAddons: async (): Promise<any[]> => {
+        const response = await apiClient.get('/admin/addons');
+        return response.data.data;
+    },
+
+    /**
+     * Create or update add-on service
+     */
+    upsertAddon: async (data: any): Promise<any> => {
+        const response = await apiClient.post('/admin/addons', data);
+        return response.data.data;
+    },
+
+    /**
+     * Delete add-on service
+     */
+    deleteAddon: async (id: string): Promise<void> => {
+        await apiClient.delete(`/admin/addons/${id}`);
     }
 };
