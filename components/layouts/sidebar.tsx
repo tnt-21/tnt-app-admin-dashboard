@@ -60,6 +60,11 @@ const navigation: NavItem[] = [
     icon: Package,
   },
   {
+    title: 'Add-ons',
+    href: '/dashboard/addons',
+    icon: ShoppingBag,
+  },
+  {
     title: 'Subscriptions',
     icon: CreditCard,
     children: [
